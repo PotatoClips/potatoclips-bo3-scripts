@@ -11,8 +11,8 @@ ADD TO:
 //above main in usermap gsc
 #using scripts\zm\pc_fetchquest;
 
-//in main in usermap gsc
-pc_fq::init(  );
+//in main in usermap gsc, add one for each quest
+pc_fq::init("[questname]", [reward]);
 
 //in zone list
 scriptparsetree,scripts/zm/pc_fetchquest.gsc
