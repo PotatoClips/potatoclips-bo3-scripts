@@ -32,6 +32,8 @@ do this for each component of the quest and it should all work
 #namespace pc_fq;
 
 function init(kvp, reward){
+	self endon( "death" ); 
+    level endon( "disconnect" );
 	level endon("end_game");															//end script if game ends
 	level.pc_fetchquest = [];
 	//quests = get all entities that include basekvp of "fetchquest_" and "_start"
@@ -47,8 +49,10 @@ function init(kvp, reward){
 #####################
 */
 
-function FetchQuest(kvp, points){
+function FetchQuest(kvp, reward){
 	wait(2);
+	self endon( "death" ); 
+    self endon( "disconnect" );
 	level endon("end_game");															//end script if game ends
 	questDoors = GetEntArray(kvp + "_door","targetname");								//get the door(s)
 	questStart = GetEntArray(kvp + "_start","targetname");								//get the start trigger
@@ -57,7 +61,7 @@ function FetchQuest(kvp, points){
 	if(questDoors.size<=0){
 		thread Report("Door for " + kvp + " is not defined.");							//added for troubleshooting
 	}
-	else	thread HandlePoints(kvp, points);
+	else	thread HandlePoints(kvp, reward);
 
 	if(questStart.size<=-0){
 		thread Report("I didn't find the start trigger in" + kvp);
@@ -80,29 +84,29 @@ function FetchQuest(kvp, points){
 
 }
 
-/*-----------------START QUEST-----------------*/
 function HandleStart(kvp){
-	self endon("death");																//end function if you die
 	self SetHintString("Press and hold ^3[{+activate}]^7 to start task.");				//display message when looking closely at the quest giver
 	self waittill("trigger");															//wait until it is triggered
 	if(isdefined(self.target))	startModels = GetEntArray(self.target,"targetname");	//get an array of the triggers targets, incase you used more than one model
 	else	thread Report("You never set the start script_models");						//print message
-	foreach(startModel in startModels)		startModel Delete();						//delete every model linked to the start trigger
+	foreach(startModel in startModels){
+		startModel Delete();															//delete every model linked to the start trigger
+	}
 	level notify(kvp + "_start");														//let the script know the quest has started
 	thread Report("A new quest has started");											//print quest update
 	self Delete();																		//delete the trigger
 }
 
-/*-----------------FIND ENTITIES-----------------*/
 function HandleFindables(kvp){
-	self endon("death");																//end function if you die
 	level waittill(kvp + "_start");														//wait until the script is told that the quest has started
 	self SetHintString("Press and hold ^3[{+activate}]^7 to search.");					//display message when looking closely at the item
 	self waittill("trigger");															//wait until it is triggered
 	if(isdefined(self.target))	findModels = GetEntArray(self.target,"targetname");		//get an array of the triggers targets, incase you used more than one model
 	else	thread Report("You never set the find script_models");						//added for troubleshooting
 	level.pc_fetchquest[self.targetname]--;												//remove one from the total
-	foreach(findModel in findModels)		findModel Delete();							//delete every item script_model
+	foreach(findModel in findModels){
+		findModel Delete();																//delete every item script_model
+	}
 	if(level.pc_fetchquest[self.targetname]<=0){										//check if all have been found
 		level notify(kvp + "_find");													//let the script know that there are no more items to find
 		thread Report("You have found all items.");										//print quest update
@@ -110,17 +114,18 @@ function HandleFindables(kvp){
 	self Delete();																		//delete the trigger
 }
 
-/*-----------------END QUEST-----------------*/
 function HandleReturn(kvp){
-	self endon("death");																//end function if you die
 	level waittill(kvp + "_find");														//wait until the script is told there are no more items to find
 	self SetHintString("Press and hold ^3[{+activate}]^7 to claim reward.");			//display message when looking closely at the quest return trigger
 	self waittill("trigger");															//wait until it is triggered
 	if(isdefined(self.target))	returnModels = GetEntArray(self.target,"targetname");	//get an array of the triggers targets, incase you used more than one model
 	else	thread Report("You never set the return script_models");					//added for troubleshooting
-	foreach(returnModel in returnModels)	returnModel Delete();						//delete every model linked to the return trigger
+	foreach(returnModel in returnModels){
+		returnModel Delete();															//delete every model linked to the return trigger
+	}
 	level notify(kvp + "_return");														//let the script know that the quest items have been turned in
 	thread Report("You have been given a reward.");										//print quest update
+	PlaySoundAtPosition("purchase",self.origin);
 	self Delete();																		//delete the triggers
 }
 
@@ -131,22 +136,29 @@ function HandleReturn(kvp){
 */
 
 /*-----------------POINTS-----------------*/
-function HandlePoints(kvp, points){
+function HandlePoints(kvp, reward){
 	level waittill(kvp + "_return");													//waits for the findables to be returned
-	thread GivePoints(points);															//call GivePoints function, send point value through
+	thread GivePoints(reward);															//call GivePoints function, send point value through
 }
-function GivePoints(points){
+function GivePoints(reward){
 	players = GetPlayers();																//make a list of all players
-	foreach(player in players)		player zm_score::add_to_player_score(points);		//give points to every player in the list
+	foreach(player in players){
+		player zm_score::add_to_player_score(reward);									//give points to every player in the list
+	}
 }
 
 /*-----------------WEAPONS-----------------*/
+//function HandleWeapons(reward){
+
+//}
 
 /*-----------------PERKS-----------------*/
+//function HandlePerks(reward){
+
+//}
 
 /*-----------------DOORS-----------------*/
 function HandleDoor(kvp){																//if using a model, this would be the clip, with the actual door as the target
-	self endon("death");																//end function if you die
 	self DisconnectPaths();																//makes it so zombies don't try to walk through it
 	if(isdefined(self.script_flag))		flag::init(self.script_flag);					//init the flag
 	level waittill(kvp + "_return");													//waits for the findables to be returned
@@ -155,7 +167,10 @@ function HandleDoor(kvp){																//if using a model, this would be the c
 	self ConnectPaths();																//makes it so zombies can path through it now
 	if(isdefined(self.target) && self.target!=""){
 		doors = GetEntArray(self.target,"targetname");									//this is the doors if your using a model, target of the clip
-		foreach(door in doors)	door thread OpenDoor();									//open this door piece
+		foreach(door in doors){
+			level endon("end_game");													//end script if game ends
+			door thread OpenDoor();														//open this door piece
+		}
 		self delete();																	//delete the clip
 	}
 	else	self thread OpenDoor();														//added another function to add more options of opening doors
@@ -164,7 +179,7 @@ function OpenDoor(){																	//default reward is door
 	if(!isdefined(self.script_noteworthy) || self.script_noteworthy=="move"){
 		move = (0,0,100);
 		if(isdefined(self.script_vector)) move = self.script_vector;
-		self MoveTo(self.origin + move,1);												//move door up 1000 units
+		self MoveTo(self.origin + move,1);												//move door up 100 units
 	}
 	if(!isdefined(self.script_noteworthy) || self.script_noteworthy=="rotate"){
 		//rotate = (0,0,120);
