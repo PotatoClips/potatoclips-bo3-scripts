@@ -36,11 +36,7 @@ function init(kvp, reward){
     level endon( "disconnect" );
 	level endon("end_game");															//end script if game ends
 	level.pc_fetchquest = [];
-	//quests = get all entities that include basekvp of "fetchquest_" and "_start"
-	//for each quest, thread fetchquest function with basekvp + questindex, entity added scripts (cost)
 	level thread FetchQuest(kvp, reward);
-	//level thread FetchQuest("fetchquest_2", 1000);
-	//thread FetchQuest("fetchquest_3", 2000);											//repeat this pattern to add more fetch quests, number is point reward
 }
 
 /*
