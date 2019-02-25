@@ -9,13 +9,13 @@ modified from shootable ee by: M.A.K.E C E N T S
 ADD TO:
 
 //above main in usermap gsc
-#using scripts\zm\pc_fetchquest;
+#using scripts\_PC\pc_fetchquest;
 
 //in main in usermap gsc, add one for each quest
 pc_fq::init("[questname]", [reward]);
 
 //in zone list
-scriptparsetree,scripts/zm/pc_fetchquest.gsc
+scriptparsetree,scripts/_PC/pc_fetchquest.gsc
 
 HOW TO:
 label a trigger_use targetname kvp as "fetchquest_1_start", "fetchquest_1_find", "fetchquest_1_return"
@@ -54,6 +54,15 @@ function FetchQuest(kvp, reward){
 	questStart = GetEntArray(kvp + "_start","targetname");								//get the start trigger
 	questFindables = GetEntArray(kvp + "_find","targetname");							//get the findables
 	questReturn = GetEntArray(kvp + "_return","targetname");							//get the return trigger
+	
+	questDoors SetCursorHint( "HINT_NOICON" );
+	questDoors SetHintString("");
+	questStart SetCursorHint( "HINT_NOICON" );
+	questStart SetHintString("");
+	questFindables SetCursorHint( "HINT_NOICON" );
+	questFindables SetHintString("");
+	questReturn SetCursorHint( "HINT_NOICON" );
+	questReturn SetHintString("");
 	if(questDoors.size<=0){
 		thread Report("Door for " + kvp + " is not defined.");							//added for troubleshooting
 	}
@@ -75,7 +84,6 @@ function FetchQuest(kvp, reward){
 	array::thread_all(questStart,&HandleStart, kvp);									//thread a handleStart function for each quest starter, pass the kvp var to each
 	array::thread_all(questFindables,&HandleFindables, kvp);
 	array::thread_all(questReturn,&HandleReturn, kvp);
-
 	array::thread_all(questDoors, &HandleDoor, kvp);									//thread a handledoor function for each quest door, pass the kvp var to each
 
 }
